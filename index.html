@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Device Test Tracker</title>
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#f6f7f9;--surface:#ffffff;--ink:#1c2530;--muted:#5d6b7b;--line:#d9dee5;
+  --accent:#1f4e79;--accent-ink:#ffffff;
+  --pass:#1e7a46;--pass-bg:#dff3e7;--fail:#b3261e;--fail-bg:#fbe3e1;
+  --block:#8a5a00;--block-bg:#fbeccb;--none:#5d6b7b;--none-bg:#e8ebef;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#12171d;--surface:#1b222b;--ink:#e8edf2;--muted:#9aa8b8;--line:#2f3a47;
+    --accent:#7fb2e0;--accent-ink:#0e1620;
+    --pass:#6fd09a;--pass-bg:#1c3a2a;--fail:#ff8f87;--fail-bg:#42201e;
+    --block:#f0c260;--block-bg:#3d3015;--none:#9aa8b8;--none-bg:#27303b;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12171d;--surface:#1b222b;--ink:#e8edf2;--muted:#9aa8b8;--line:#2f3a47;
+  --accent:#7fb2e0;--accent-ink:#0e1620;
+  --pass:#6fd09a;--pass-bg:#1c3a2a;--fail:#ff8f87;--fail-bg:#42201e;
+  --block:#f0c260;--block-bg:#3d3015;--none:#9aa8b8;--none-bg:#27303b;
+  color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+main{max-width:980px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:1.6rem;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:0 0 20px;max-width:62ch}
+.stats{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.stat{flex:1 1 110px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+.stat b{display:block;font-size:1.5rem;line-height:1.2}
+.stat span{color:var(--muted);font-size:.85rem}
+.stat.pass b{color:var(--pass)}.stat.fail b{color:var(--fail)}.stat.block b{color:var(--block)}
+.bar{display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--none-bg);margin:-8px 0 20px}
+.bar i{display:block;height:100%}
+.bar .p{background:var(--pass)}.bar .f{background:var(--fail)}.bar .b{background:var(--block)}
+details.add{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 14px;margin-bottom:16px}
+details.add summary{cursor:pointer;font-weight:600}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.grid .full{grid-column:1/-1}
+label{display:block;font-size:.85rem;color:var(--muted);margin-bottom:3px}
+input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:8px 10px}
+textarea{min-height:64px;resize:vertical}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button{font:inherit;cursor:pointer;border-radius:5px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);padding:8px 14px}
+button.ghost{background:transparent;color:var(--accent)}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.filters{display:flex;flex-wrap:wrap;gap:6px}
+.filters button{padding:5px 11px;font-size:.88rem}
+.filters button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.filters button[aria-pressed="false"]{background:transparent;color:var(--accent)}
+.case{background:var(--surface);border:1px solid var(--line);border-left-width:5px;border-radius:6px;padding:12px 14px;margin-bottom:10px}
+.case.Pass{border-left-color:var(--pass)}.case.Fail{border-left-color:var(--fail)}.case.Blocked{border-left-color:var(--block)}.case.NotRun{border-left-color:var(--none)}
+.head{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:baseline}
+.head h3{margin:0;font-size:1.02rem}
+.id{color:var(--muted);font-size:.85rem;margin-right:8px}
+.tag{font-size:.8rem;padding:2px 8px;border-radius:10px;background:var(--none-bg);color:var(--muted)}
+.case p{margin:6px 0;font-size:.94rem;white-space:pre-line}
+.case p b{font-weight:600}
+.row{display:grid;grid-template-columns:150px 1fr auto;gap:10px;margin-top:10px;align-items:end}
+.del{background:transparent;color:var(--fail);border-color:var(--line);padding:8px 10px}
+.empty{padding:28px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:6px}
+.note{color:var(--muted);font-size:.85rem;margin-top:24px}
+@media (max-width:620px){.grid{grid-template-columns:1fr}.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Device Test Tracker</h1>
+  <p class="sub">Write manual test cases, run them on a real device, mark each Pass, Fail or Blocked, and watch the pass rate update. Your entries stay in this browser.</p>
+
+  <section class="stats" id="stats" aria-label="Test summary"></section>
+  <div class="bar" id="bar" aria-hidden="true"></div>
+
+  <details class="add" id="addBox">
+    <summary>Add a test case</summary>
+    <div class="grid">
+      <div><label for="fMod">Module</label><input id="fMod" placeholder="e.g. Bluetooth"></div>
+      <div><label for="fScn">Scenario</label><input id="fScn" placeholder="e.g. Pair with earbuds"></div>
+      <div class="full"><label for="fStp">Test steps (one per line)</label><textarea id="fStp"></textarea></div>
+      <div class="full"><label for="fExp">Expected result</label><input id="fExp"></div>
+      <div class="full"><button id="addBtn" type="button">Add test case</button> <span id="msg" class="note" role="status"></span></div>
+    </div>
+  </details>
+
+  <div class="toolbar">
+    <div class="filters" id="filters" role="group" aria-label="Filter by status"></div>
+    <button class="ghost" id="resetBtn" type="button">Reset to sample cases</button>
+  </div>
+
+  <div id="list"></div>
+  <p class="note">Tip: when a case fails, write exactly what you saw under Actual result. That sentence becomes your defect report.</p>
+</main>
+
+<script>
+(function(){
+  var KEY="device-test-tracker-v1";
+  var STATUSES=["Not Run","Pass","Fail","Blocked"];
+  var SAMPLE=[
+    {m:"Connectivity",s:"Wi-Fi connects to a saved network",st:"1. Open Settings > Wi-Fi\n2. Select the network\n3. Open a web page",e:"Device connects and the page loads."},
+    {m:"Connectivity",s:"Bluetooth pairs with an accessory",st:"1. Turn on Bluetooth\n2. Put the accessory in pairing mode\n3. Select it from the list",e:"Accessory shows as Connected."},
+    {m:"Audio",s:"Volume buttons change the volume",st:"1. Play a song\n2. Press volume up to maximum\n3. Press volume down to minimum",e:"Volume changes in steps and the indicator matches."},
+    {m:"Camera",s:"Rear camera saves a photo",st:"1. Open Camera\n2. Take a photo\n3. Open it in Gallery",e:"Photo is saved and displays correctly."},
+    {m:"Battery",s:"Charging indicator appears",st:"1. Connect the charger\n2. Watch the battery icon",e:"Charging icon shows and the percentage rises."},
+    {m:"Security",s:"Wrong PIN is rejected",st:"1. Lock the device\n2. Enter a wrong PIN\n3. Enter the correct PIN",e:"Wrong PIN is rejected; correct PIN unlocks."}
+  ];
+  var cases=[], filter="All", nextId=1;
+
+  function load(){
+    try{var raw=localStorage.getItem(KEY); if(raw){var d=JSON.parse(raw); if(d&&d.cases){cases=d.cases;nextId=d.nextId||cases.length+1;return;}}}catch(e){}
+    seed();
+  }
+  function save(){try{localStorage.setItem(KEY,JSON.stringify({cases:cases,nextId:nextId}));}catch(e){}}
+  function seed(){
+    cases=[];nextId=1;
+    SAMPLE.forEach(function(c){cases.push(mk(c.m,c.s,c.st,c.e));});
+  }
+  function mk(m,s,st,e){
+    var id="TC-"+String(nextId++).padStart(3,"0");
+    return {id:id,m:m,s:s,st:st,e:e,actual:"",status:"Not Run"};
+  }
+  function el(tag,cls,text){var n=document.createElement(tag);if(cls)n.className=cls;if(text!=null)n.textContent=text;return n;}
+  function count(s){return cases.filter(function(c){return c.status===s;}).length;}
+
+  function renderStats(){
+    var total=cases.length,p=count("Pass"),f=count("Fail"),b=count("Blocked"),n=count("Not Run");
+    var run=total-n, rate=run?Math.round(p/run*100):0;
+    var box=document.getElementById("stats"); box.textContent="";
+    [["Total",total,""],["Pass",p,"pass"],["Fail",f,"fail"],["Blocked",b,"block"],["Not run",n,""],["Pass rate",rate+"%",""]].forEach(function(x){
+      var d=el("div","stat "+x[2]);d.appendChild(el("b",null,x[1]));d.appendChild(el("span",null,x[0]));box.appendChild(d);
+    });
+    var bar=document.getElementById("bar");bar.textContent="";
+    [["p",p],["f",f],["b",b]].forEach(function(x){var i=document.createElement("i");i.className=x[0];i.style.width=(total?x[1]/total*100:0)+"%";bar.appendChild(i);});
+  }
+
+  function renderFilters(){
+    var box=document.getElementById("filters");box.textContent="";
+    ["All"].concat(STATUSES).forEach(function(s){
+      var b=el("button",null,s);b.type="button";b.setAttribute("aria-pressed",String(filter===s));
+      b.onclick=function(){filter=s;render();};box.appendChild(b);
+    });
+  }
+
+  function renderList(){
+    var list=document.getElementById("list");list.textContent="";
+    var shown=cases.filter(function(c){return filter==="All"||c.status===filter;});
+    if(!shown.length){list.appendChild(el("div","empty",cases.length?"No test cases with this status.":"No test cases yet. Add your first one above."));return;}
+    shown.forEach(function(c){
+      var card=el("article","case "+c.status.replace(" ",""));
+      var head=el("div","head");
+      var h=el("h3");h.appendChild(el("span","id",c.id));h.appendChild(document.createTextNode(c.s));
+      head.appendChild(h);head.appendChild(el("span","tag",c.m));card.appendChild(head);
+      var steps=el("p");steps.appendChild(el("b",null,"Steps\n"));steps.appendChild(document.createTextNode(c.st));card.appendChild(steps);
+      var exp=el("p");exp.appendChild(el("b",null,"Expected: "));exp.appendChild(document.createTextNode(c.e));card.appendChild(exp);
+      var row=el("div","row");
+      var w1=el("div");var l1=el("label",null,"Status");l1.setAttribute("for","s"+c.id);
+      var sel=document.createElement("select");sel.id="s"+c.id;
+      STATUSES.forEach(function(s){var o=el("option",null,s);if(s===c.status)o.selected=true;sel.appendChild(o);});
+      sel.onchange=function(){c.status=sel.value;save();render();};
+      w1.appendChild(l1);w1.appendChild(sel);
+      var w2=el("div");var l2=el("label",null,"Actual result");l2.setAttribute("for","a"+c.id);
+      var inp=document.createElement("input");inp.id="a"+c.id;inp.value=c.actual;inp.placeholder="What did you observe?";
+      inp.onchange=function(){c.actual=inp.value;save();};
+      w2.appendChild(l2);w2.appendChild(inp);
+      var del=el("button","del","Delete");del.type="button";del.setAttribute("aria-label","Delete "+c.id);
+      del.onclick=function(){cases=cases.filter(function(x){return x!==c;});save();render();};
+      row.appendChild(w1);row.appendChild(w2);row.appendChild(del);card.appendChild(row);
+      list.appendChild(card);
+    });
+  }
+
+  function render(){renderStats();renderFilters();renderList();}
+
+  document.getElementById("addBtn").onclick=function(){
+    var m=document.getElementById("fMod").value.trim(),s=document.getElementById("fScn").value.trim(),
+        st=document.getElementById("fStp").value.trim(),e=document.getElementById("fExp").value.trim(),
+        msg=document.getElementById("msg");
+    if(!s||!st||!e){msg.textContent="Enter a scenario, steps and an expected result.";return;}
+    cases.push(mk(m||"General",s,st,e));save();
+    ["fMod","fScn","fStp","fExp"].forEach(function(i){document.getElementById(i).value="";});
+    msg.textContent="Added.";render();
+  };
+  document.getElementById("resetBtn").onclick=function(){
+    if(confirm("Replace all test cases with the sample set?")){seed();filter="All";save();render();}
+  };
+
+  load();render();
+})();
+</script>
+</body>
+</html>
